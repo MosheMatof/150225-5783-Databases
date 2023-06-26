@@ -1,0 +1,18 @@
+SELECT
+        EXTRACT(MONTH FROM ms.purchase_date) AS month,
+        MAX(m.merchandise_name) AS top_selling_merchandise,
+        COUNT(ms.merchandise_sale_id) AS sales_count
+    FROM
+        Merchandise_Sales ms
+        JOIN Merchandise m ON ms.merchandise_id = m.merchandise_id
+    WHERE
+        EXTRACT(YEAR FROM ms.purchase_date) = 2022
+    GROUP BY
+        EXTRACT(MONTH FROM ms.purchase_date)
+    ORDER BY
+        EXTRACT(MONTH FROM ms.purchase_date);
+
+    SELECT FAN_CLUBS.club_name, COUNT(TICKET_SALES.ticket_sale_id) AS total_sales, SUM(TICKET_SALES.price) AS total_revenue
+    FROM FAN_CLUBS
+    LEFT JOIN TICKET_SALES ON FAN_CLUBS.club_id = TICKET_SALES.buyer_id
+    GROUP BY FAN_CLUBS.club_name;
