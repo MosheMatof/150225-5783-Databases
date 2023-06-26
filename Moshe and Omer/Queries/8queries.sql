@@ -67,14 +67,15 @@ FETCH FIRST 10 ROWS ONLY;
 
 -- 8. השוואת נתוני מכירות של מוצרי ספורט וכרטיסים לפי חודשים.
 -- מחזיר כמות מכירות (פריטים/כסף) של שתי הקטגוריות , משווה כמה לקוחות קנו מכל דבר, כמה מהם הם לקוחות יחודיים (שקנו רק מהקטגוריה הספציפית) וכמה יחודיים.
--- זמן ריצה כולל 44.837 שניות (לחישוב של חודשיים)
+-- זמן ריצה כולל 118.785 שניות (לחישוב של חודשיים)
+
 WITH ms AS (
     SELECT 
         TRUNC(purchase_date, 'MM') AS sale_date, 
-        COUNT(DISTINCT merchandise_sale_id) AS merchandise_sales_count,
+        COUNT(merchandise_sale_id) AS merchandise_sales_count,
         SUM(price) AS merchandise_sales_amount,
-        COUNT(DISTINCT merchandise_id) AS distinct_merchandise_count,
-        COUNT(DISTINCT buyer_id) AS shared_buyers_count
+        COUNT(CASE WHEN buyer_id IN (SELECT buyer_id FROM Ticket_Sales) THEN buyer_id END) AS shared_buyers_count,
+        COUNT(CASE WHEN buyer_id NOT IN (SELECT buyer_id FROM Ticket_Sales) THEN buyer_id END) AS merchandise_only_buyers_count
     FROM Merchandise_Sales
     WHERE purchase_date >= DATE '2023-01-01' AND purchase_date < DATE '2023-03-01'
     GROUP BY TRUNC(purchase_date, 'MM')
@@ -82,9 +83,9 @@ WITH ms AS (
 ts AS (
     SELECT 
         TRUNC(purchase_date, 'MM') AS sale_date, 
-        COUNT(DISTINCT ticket_sale_id) AS ticket_sales_count,
+        COUNT(ticket_sale_id) AS ticket_sales_count,
         SUM(price) AS ticket_sales_amount,
-        COUNT(DISTINCT CASE WHEN buyer_id NOT IN (SELECT buyer_id FROM Merchandise_Sales) THEN buyer_id END) AS ticket_only_buyers_count
+        COUNT(CASE WHEN buyer_id NOT IN (SELECT buyer_id FROM Merchandise_Sales) THEN buyer_id END) AS ticket_only_buyers_count
     FROM Ticket_Sales
     WHERE purchase_date >= DATE '2023-01-01' AND purchase_date < DATE '2023-03-01'
     GROUP BY TRUNC(purchase_date, 'MM')
@@ -95,7 +96,7 @@ SELECT
     COALESCE(ts.ticket_sales_count, 0) AS ticket_sales_count,
     COALESCE(ms.merchandise_sales_amount, 0) AS merchandise_sales_amount,
     COALESCE(ts.ticket_sales_amount, 0) AS ticket_sales_amount,
-    COALESCE(ms.distinct_merchandise_count, 0) AS distinct_merchandise_count,
+    COALESCE(ms.merchandise_only_buyers_count, 0) AS merchandise_only_buyers_count,
     COALESCE(ts.ticket_only_buyers_count, 0) AS ticket_only_buyers_count,
     COALESCE(ms.shared_buyers_count, 0) AS shared_buyers_count
 FROM ms
